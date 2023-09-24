@@ -11,7 +11,9 @@
 
 
 # [PixelTime](https://oshwhub.com/kakaka/PixelTime)
-a low power led watch based on ESP32 C3
+a low power led watch based on ESP32-C3 & MicroPython
+
+[afdian.net](https://afdian.net/a/modular)    [bilibili](https://www.bilibili.com/video/BV1Bj411i7ZR/)   [OSHWHUB](https://oshwhub.com/kakaka/PixelTime)
 
 ![5](documents/images/5.png)
 
