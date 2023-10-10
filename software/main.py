@@ -209,43 +209,40 @@ week=('SUN','MON','TUE','WED','THU','FRI','SAT')
  
 
 
-def syncTimeByWifi(ssid,password,trycnt=10):
+def syncTimeByWifi(ssid,password,trycnt=20):
     if ssid == None :
         return
     import ntptime
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
     wlan.connect(ssid,password)
-
-    while not wlan.isconnected() and wlan.status()>=0 and trycnt>=0:
-        print("Waiting to connect:")
-        time.sleep(1.0)
-        trycnt-=1
-        if trycnt%2 :
-            disp.drawPixel(5,1,C_GREEN)
-        else:
-            disp.drawPixel(5,1,C_RED)
-
-        disp.show()
-
     
-    if trycnt<0:
-        wlan.disconnect()
-        wlan.active(False)
-        watch.resetTimeout()
-        
-    print(wlan.ifconfig())
-    
-    while True:
-        try:
-            print('获取时间中')
-            ntptime.host = 'ntp1.aliyun.com'
-            ntptime.settime()
-            print('成功获取')
-            break
-        except:
-            print('获取失败')
-            time.sleep(1)
+    if not wlan.isconnected():
+        while not wlan.isconnected():
+            print("Waiting to connect:")
+            time.sleep(1.0)
+            trycnt = trycnt-1
+            if trycnt%2 :
+                disp.drawPixel(5,1,C_GREEN)
+            else:
+                disp.drawPixel(5,1,C_RED)
+
+            disp.show()
+            if trycnt<0:
+                print("\nFail !!!\n")
+                break
+    if wlan.isconnected():     
+        print(wlan.ifconfig())
+        while True:
+            try:
+                print('获取时间中')
+                ntptime.host = 'ntp1.aliyun.com'
+                ntptime.settime()
+                print('成功获取')
+                break
+            except:
+                print('获取失败')
+                time.sleep(1)
     wlan.disconnect()
     wlan.active(False)
     watch.resetTimeout()
@@ -266,6 +263,10 @@ class Event():
     K2_RELEASED=4
     K3_PRESSED=5
     K3_RELEASED=6
+    K1_LONG=7
+    K2_LONG=8
+    K3_LONG=9
+
     def __init__(self):
         self.event=[]
     
@@ -277,17 +278,22 @@ class Event():
             return -1              
         return self.event.pop(0)
 
-       
-
+LongPressed = 1000       
+key_time=0
 def fun(key):
+    global key_time
     watch.resetTimeout()
     if key==k1:
         if key.value() == 0:
+            key_time=time.ticks_ms()
             # print('k1 pressed')
             evt.addEvent(Event.K1_PRESSED) 
         else:
             # print('k1 released')
-            evt.addEvent(Event.K1_RELEASED)
+            if time.ticks_diff(time.ticks_ms(),key_time)>LongPressed:
+                evt.addEvent(Event.K1_LONG)
+            else:                
+                evt.addEvent(Event.K1_RELEASED)
     if key==k2:
         if key.value() == 1:
             # print('k2 pressed')
@@ -375,7 +381,7 @@ def handleEvent(evt):
     if evt==Event.K3_PRESSED:
         watch.poweroff()
 
-    if evt==Event.K1_PRESSED:
+    if evt==Event.K1_LONG:
         print('syncTimeByWifi')
  
         disp.drawIcon(0,0,15,8,ICON_WIFI,C_BLUE,C_BLACK)
@@ -403,8 +409,7 @@ def handleEvent(evt):
 timeout_en = False
 
 if  charge.value()==0 :
-    timeout_en = False     
-     
+    timeout_en = False
 else:
     timeout_en = True
 
@@ -418,8 +423,6 @@ while True:
     if  charge.value()==0 :
         time.sleep(1.0)
         disp.clear()
-#         timeout_en = True
-        
         
     if  watch.checkTimeout() and timeout_en:
         print("timeout")
@@ -441,4 +444,3 @@ while True:
     time.sleep(0.2)
     gc.collect()
     # print(f'mem: {gc.mem_free()}')
-
